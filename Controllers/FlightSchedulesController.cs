@@ -21,7 +21,7 @@ namespace SanoshAirlines.Controllers
         }
 
         // GET: api/FlightSchedules
-        [HttpGet()]
+        [HttpGet]
         public async Task<ActionResult<IEnumerable<FlightSchedule>>> GetFlightSchedules()
         {
             if (_context.FlightSchedules == null)
@@ -57,15 +57,15 @@ namespace SanoshAirlines.Controllers
 
 
         // GET: api/FlightSchedules
-        [HttpGet("{id}")]
-        public async Task<ActionResult<IEnumerable<FlightSchedule>>> GetFlightSchedule([FromRoute]int id)
+        [HttpGet("{scheduleid}")]
+        public async Task<ActionResult<IEnumerable<FlightSchedule>>> GetExactFlightSchedule([FromRoute]int scheduleid)
         {
             if (_context.FlightSchedules == null)
             {
                 return NotFound();
             }
      
-            var schedule = _context.FlightSchedules.FirstOrDefault(s => s.ScheduleId == id);
+            var schedule = await _context.FlightSchedules.FirstOrDefaultAsync(s => s.ScheduleId == scheduleid);
             return Ok(schedule);
         }
 
@@ -103,7 +103,7 @@ namespace SanoshAirlines.Controllers
 
         // POST: api/FlightSchedules
         [HttpPost("{months}")]
-        public IActionResult PostFlightSchedule([FromBody] FlightSchedule schedule, [FromRoute] int months)
+        public IActionResult AddFlightSchedule([FromBody] FlightSchedule schedule, [FromRoute] int months)
         {
             if (!ModelState.IsValid || months <= 0)
             {
