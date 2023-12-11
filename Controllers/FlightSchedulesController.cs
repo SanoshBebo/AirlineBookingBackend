@@ -31,6 +31,7 @@ namespace SanoshAirlines.Controllers
             return await _context.FlightSchedules.ToListAsync();
         }
 
+
         // GET: api/FlightSchedules
         [HttpGet("{source}/{destination}/{date}")]
         public async Task<ActionResult<IEnumerable<FlightSchedule>>> GetDirectFlightSchedule([FromRoute] string source, [FromRoute] string destination, [FromRoute] DateTime date)
@@ -42,6 +43,8 @@ namespace SanoshAirlines.Controllers
             var schedules = await _context.FlightSchedules.Where(s => s.SourceAirportId == source && s.DestinationAirportId == destination && s.DateTime.Date == date.Date).ToListAsync();
             return Ok(schedules);
         }
+
+
 
         // GET: api/FlightSchedules
         [HttpGet("connectingflight/{source}/{destination}/{date}")]
@@ -143,6 +146,7 @@ namespace SanoshAirlines.Controllers
             {
                 for (int i = 0; i < months * DateTime.DaysInMonth(departureDateTime.Year, departureDateTime.Month); i++)
                 {
+
                     var addedSchedule = new FlightSchedule
                     {
                         DateTime = departureDateTime.AddDays(i),
@@ -188,9 +192,8 @@ namespace SanoshAirlines.Controllers
             {
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
+
         }
-
-
 
 
         // DELETE: api/FlightSchedules
@@ -203,10 +206,12 @@ namespace SanoshAirlines.Controllers
             }
 
             var flightSchedules = await _context.FlightSchedules.Where(fs => ids.Contains(fs.ScheduleId)).ToListAsync();
+
             if (flightSchedules == null || flightSchedules.Count == 0)
             {
                 return NotFound("No FlightSchedules found for the given IDs.");
             }
+
 
             _context.FlightSchedules.RemoveRange(flightSchedules);
             await _context.SaveChangesAsync();

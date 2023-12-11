@@ -29,17 +29,19 @@ namespace SanoshAirlines.Controllers
           {
               return NotFound();
           }
-            return await _context.FlightDetails.ToListAsync();
+
+          return await _context.FlightDetails.ToListAsync();
+        
         }
 
         // GET: api/FlightDetails/5
         [HttpGet("{id}")]
         public async Task<ActionResult<FlightDetail>> GetFlightDetail(string id)
         {
-          if (_context.FlightDetails == null)
-          {
-              return NotFound();
-          }
+              if (_context.FlightDetails == null)
+              {
+                  return NotFound();
+              }
             var flightDetail = await _context.FlightDetails.FindAsync(id);
 
             if (flightDetail == null)
@@ -51,7 +53,6 @@ namespace SanoshAirlines.Controllers
         }
 
         // PUT: api/FlightDetails/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutFlightDetail(string id, FlightCapAndStatus flightDetail)
         {
@@ -60,8 +61,6 @@ namespace SanoshAirlines.Controllers
             if(Flight == null)
             {
                 return BadRequest("Flight Not Found");
-                
-
             }
 
             Flight.FlightCapacity = flightDetail.FlightCapacity;
@@ -82,7 +81,6 @@ namespace SanoshAirlines.Controllers
                     throw;
                 }
             }
-
             return NoContent();
         }
 
