@@ -11,5 +11,5 @@ public partial class Seat
 
     public string? Status { get; set; }
 
-/*    public virtual FlightSchedule Schedule { get; set; } = null!;
-*/}
+   /* public virtual FlightSchedule Schedule { get; set; } = null!;*/
+}

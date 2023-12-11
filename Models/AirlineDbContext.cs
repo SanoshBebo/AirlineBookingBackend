@@ -35,13 +35,13 @@ public partial class AirlineDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=DESKTOP-4JLR8T5\\SQLEXPRESS;Database=SanoshAirlinesDb;Trusted_Connection=True;Encrypt=false;");
+        => optionsBuilder.UseSqlServer("Server=PSILENL040;Database=SanoshAirlinesDb;Trusted_Connection=True;Encrypt=false;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Airport>(entity =>
         {
-            entity.HasKey(e => e.AirportId).HasName("PK__Airports__E3DBE0EA1743B717");
+            entity.HasKey(e => e.AirportId).HasName("PK__Airports__E3DBE0EAE16127A6");
 
             entity.Property(e => e.AirportId).HasMaxLength(255);
             entity.Property(e => e.AirportName).HasMaxLength(255);
@@ -54,11 +54,6 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.BookingId).ValueGeneratedNever();
             entity.Property(e => e.BookingType).HasMaxLength(255);
             entity.Property(e => e.Status).HasMaxLength(255);
-/*
-            entity.HasOne(d => d.User).WithMany(p => p.Bookings)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("FK_Bookings_Users_Userid");*/
         });
 
         modelBuilder.Entity<ConnectionFlightTicket>(entity =>
@@ -74,7 +69,7 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.SeatNo).HasMaxLength(255);
             entity.Property(e => e.SourceAirportId).HasMaxLength(255);
 
-           /* entity.HasOne(d => d.Booking).WithMany(p => p.ConnectionFlightTickets).HasForeignKey(d => d.BookingId);
+            /*entity.HasOne(d => d.Booking).WithMany(p => p.ConnectionFlightTickets).HasForeignKey(d => d.BookingId);
 
             entity.HasOne(d => d.DestinationAirport).WithMany(p => p.ConnectionFlightTicketDestinationAirports)
                 .HasForeignKey(d => d.DestinationAirportId)
@@ -85,7 +80,7 @@ public partial class AirlineDbContext : DbContext
 
         modelBuilder.Entity<FlightDetail>(entity =>
         {
-            entity.HasKey(e => e.FlightName).HasName("PK__FlightDe__32AC470FEC215023");
+            entity.HasKey(e => e.FlightName).HasName("PK__FlightDe__32AC470FCEFACDCC");
 
             entity.Property(e => e.FlightName).HasMaxLength(255);
             entity.Property(e => e.FlightId).ValueGeneratedOnAdd();
@@ -101,7 +96,7 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.FlightName).HasMaxLength(255);
             entity.Property(e => e.SourceAirportId).HasMaxLength(255);
 
-         /*   entity.HasOne(d => d.DestinationAirport).WithMany(p => p.FlightScheduleDestinationAirports)
+          /*  entity.HasOne(d => d.DestinationAirport).WithMany(p => p.FlightScheduleDestinationAirports)
                 .HasForeignKey(d => d.DestinationAirportId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
 
@@ -139,7 +134,7 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.SourceAirportId).HasMaxLength(255);
             entity.Property(e => e.Status).HasMaxLength(255);
 
-          /*  entity.HasOne(d => d.DestinationAirport).WithMany(p => p.PartnerBookingDestinationAirports)
+           /* entity.HasOne(d => d.DestinationAirport).WithMany(p => p.PartnerBookingDestinationAirports)
                 .HasForeignKey(d => d.DestinationAirportId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -153,11 +148,15 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.SeatNumber).HasMaxLength(255);
             entity.Property(e => e.Status).HasMaxLength(255);
 
-           /* entity.HasOne(d => d.Schedule).WithMany(p => p.Seats).HasForeignKey(d => d.ScheduleId);*/
+          /*  entity.HasOne(d => d.Schedule).WithMany(p => p.Seats).HasForeignKey(d => d.ScheduleId);*/
         });
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.HasKey(e => e.UserId).HasName("PK_Users");
+
+            entity.ToTable("User");
+
             entity.Property(e => e.UserId).ValueGeneratedNever();
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.Name).HasMaxLength(255);

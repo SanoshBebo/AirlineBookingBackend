@@ -29,7 +29,7 @@ public partial class PartnerBooking
 
     public DateTime DateTime { get; set; }
 
-/*    public virtual Airport? DestinationAirport { get; set; }
+    /*public virtual Airport? DestinationAirport { get; set; }
 
     public virtual Airport? SourceAirport { get; set; }*/
 }

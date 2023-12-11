@@ -17,7 +17,7 @@ public partial class FlightSchedule
 
     public DateTime DateTime { get; set; }
 
- /*   public virtual Airport DestinationAirport { get; set; } = null!;
+   /* public virtual Airport DestinationAirport { get; set; } = null!;
 
     public virtual FlightDetail FlightNameNavigation { get; set; } = null!;
 

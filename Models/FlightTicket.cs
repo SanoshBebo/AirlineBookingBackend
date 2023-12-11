@@ -18,8 +18,8 @@ public partial class FlightTicket
     public int Age { get; set; }
 
     public string Gender { get; set; } = null!;
-/*
-    public virtual Booking Booking { get; set; } = null!;
+
+   /* public virtual Booking Booking { get; set; } = null!;
 
     public virtual FlightSchedule Schedule { get; set; } = null!;*/
 }
