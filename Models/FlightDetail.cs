@@ -13,5 +13,5 @@ public partial class FlightDetail
 
     public bool IsActive { get; set; }
 
-/*    public virtual ICollection<FlightSchedule> FlightSchedules { get; set; } = new List<FlightSchedule>();
-*/}
+  /*  public virtual ICollection<FlightSchedule> FlightSchedules { get; set; } = new List<FlightSchedule>();*/
+}

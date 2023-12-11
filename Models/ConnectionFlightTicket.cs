@@ -27,7 +27,7 @@ public partial class ConnectionFlightTicket
 
     public string AirlineName { get; set; } = null!;
 
-/*    public virtual Booking Booking { get; set; } = null!;
+   /* public virtual Booking Booking { get; set; } = null!;
 
     public virtual Airport? DestinationAirport { get; set; }
 

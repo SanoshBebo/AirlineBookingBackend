@@ -15,7 +15,5 @@ public partial class Booking
 
  /*   public virtual ICollection<ConnectionFlightTicket> ConnectionFlightTickets { get; set; } = new List<ConnectionFlightTicket>();
 
-    public virtual ICollection<FlightTicket> FlightTickets { get; set; } = new List<FlightTicket>();
-
-    public virtual User? User { get; set; }*/
+    public virtual ICollection<FlightTicket> FlightTickets { get; set; } = new List<FlightTicket>();*/
 }
