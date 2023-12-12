@@ -71,7 +71,7 @@ namespace SanoshAirlines.Controllers
                 return NotFound();
             }
 
-            return NoContent();
+            return Ok($"Seats have been changed to {status} ");
         }
     }
 }
