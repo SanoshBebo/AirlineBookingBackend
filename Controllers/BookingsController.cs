@@ -32,53 +32,85 @@ namespace SanoshAirlines.Controllers
                 return NotFound();
             }
 
-            var Bookings = await _context.Bookings.Where(b => b.UserId == userid).ToListAsync();
-            var directFlights = new List<object>();
-            var connectingFlights = new List<object>();
+            var bookings = await _context.Bookings.Where(b => b.UserId == userid).ToListAsync();
 
-            if(Bookings == null)
+            if (bookings == null || !bookings.Any())
             {
                 return BadRequest("No Bookings");
             }
 
-            var BookingData = new List<object>();
+            var bookingData = new List<object>();
 
-            foreach (var booking in Bookings)
+            foreach (var booking in bookings)
             {
-                var isDirectFlight = _context.FlightTickets.FirstOrDefault(ft => ft.BookingId == booking.BookingId);
-                var isConnectingFlight = _context.ConnectionFlightTickets.FirstOrDefault(cft => cft.BookingId == booking.BookingId);
-                if (isDirectFlight != null && isConnectingFlight !=null)
+                var firstFlightTickets = await _context.FlightTickets
+                    .Where(ft => ft.BookingId == booking.BookingId)
+                    .ToListAsync();
+
+                var connectingFlightTickets = await _context.ConnectionFlightTickets
+                    .Where(cft => cft.BookingId == booking.BookingId)
+                    .ToListAsync();
+
+                var bookingIdData = new List<object>();
+
+                foreach (var ticket in firstFlightTickets)
                 {
-                    var FirstFlightTickets = await _context.FlightTickets.Where(ft => ft.BookingId == booking.BookingId).ToListAsync();
-                    
-                    var ConnectingFlightTickets = await _context.ConnectionFlightTickets.Where(ft => ft.BookingId == booking.BookingId).ToListAsync();
-                    
-                    var BookingIdData = new
-                    {
-                        booking,
-                        FirstFlightTickets,
-                        ConnectingFlightTickets
-                    };
+                    var flightSchedule = await _context.FlightSchedules
+                        .FirstOrDefaultAsync(fs => fs.ScheduleId == ticket.ScheduleId);
 
-                    BookingData.Add(BookingIdData);
-                    
+                    var sourceAirport = await _context.Airports
+                    .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.SourceAirportId);
+
+                    var destinationAirport = await _context.Airports
+                        .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.DestinationAirportId);
+
+
+                    var bookingTicketData = new
+                    {
+                        Ticket = ticket,
+                        FlightSchedule = flightSchedule,
+                        SourceAirport = sourceAirport,
+                        DestinationAirport = destinationAirport
+                    };
+                    bookingIdData.Add(bookingTicketData);
                 }
-                else if (isDirectFlight != null && isConnectingFlight == null)
+
+                foreach (var ticket in connectingFlightTickets)
                 {
-                    var FirstFlightTickets = await _context.FlightTickets.Where(ft => ft.BookingId == booking.BookingId).ToListAsync();
+                      var flightSchedule = await _context.FlightSchedules
+                        .FirstOrDefaultAsync(fs => fs.FlightName == ticket.FlightName && fs.DateTime.Date == ticket.DateTime.Date && fs.SourceAirportId == ticket.SourceAirportId && fs.DestinationAirportId == ticket.DestinationAirportId);
 
-                    var BookingIdData = new
+                    var sourceAirport = await _context.Airports
+                    .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.SourceAirportId);
+
+                    var destinationAirport = await _context.Airports
+                        .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.DestinationAirportId);
+
+                    var bookingTicketData = new
                     {
-                        booking,
-                        FirstFlightTickets,
+                        Ticket = ticket,
+                        FlightSchedule = flightSchedule,
+                        SourceAirport = sourceAirport,
+                        DestinationAirport = destinationAirport
                     };
-
-                    BookingData.Add(BookingIdData);
+                    bookingIdData.Add(bookingTicketData);
                 }
+
+                var bookingDataItem = new
+                {
+                    Booking = booking,
+                    Tickets = bookingIdData
+                };
+
+                bookingData.Add(bookingDataItem);
             }
 
-            return Ok(BookingData);
+            return Ok(bookingData);
         }
+
+
+
+
 
         // GET: api/Bookings/5
         [HttpGet("{id}")]
@@ -98,7 +130,30 @@ namespace SanoshAirlines.Controllers
             return booking;
         }
 
-      
+
+        // GET: api/Bookings/5
+        [HttpGet("getConnectionBooking/{id}")]
+        public async Task<ActionResult<ConnectionFlightTicket>> GetConnectionBooking(Guid id)
+        {
+            if (_context.Bookings == null)
+            {
+                return NotFound();
+            }
+            var booking = await _context.Bookings.FindAsync(id);
+
+            if (booking == null)
+            {
+                return NotFound();
+            }
+
+            var connectionBookingTickets = await _context.ConnectionFlightTickets.Where(cft => cft.BookingId == id).ToListAsync();
+
+
+            return Ok(connectionBookingTickets);
+        }
+
+
+
         // POST: api/Bookings
         [HttpPost]
         public async Task<ActionResult<BookingModel>> MakeBooking([FromBody] List<BookingModel> bookings)
@@ -121,6 +176,7 @@ namespace SanoshAirlines.Controllers
                     BookingType = bookings[0].BookingType,
                 };
 
+                
                 await _context.Bookings.AddAsync(Booking);
 
                 foreach (var booking in bookings)
@@ -157,6 +213,9 @@ namespace SanoshAirlines.Controllers
                                     DestinationAirportId = booking.DestinationAirportId,
                                     DateTime = booking.DateTime,
                                 };
+
+
+
                                 await _context.ConnectionFlightTickets.AddAsync(connectionTicket);
                             }
                         }
@@ -165,51 +224,16 @@ namespace SanoshAirlines.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok("Tickets Booked Successfully");
+                return Ok(BookingId);
             }
 
             return BadRequest("No Details To Make Booking");
 
         }
 
-        // POST: api/Bookings/PartnerBookings
-        [HttpPost("partnerbookings")]
-        public async Task<ActionResult<BookingModel>> PartnerBooking(PartnerBookingModel booking)
-        {
-            if (_context.Bookings == null)
-            {
-                return Problem("Entity set 'AirlineDbContext.Bookings' is null.");
-            }
 
-                    if (booking.PassengerInfos != null && booking.PassengerInfos.Count > 0)
-                    {
-                        foreach (var passengerInfo in booking.PassengerInfos)
-                        {
-                                var connectionTicket = new PartnerBooking
-                                {
-                                    TicketNo= booking.TicketNo,
-                                    BookingId = booking.BookingId,
-                                    FlightName = booking.FlightName,
-                                    AirlineName = booking.AirlineName,
-                                    SourceAirportId = booking.SourceAirportId,
-                                    DestinationAirportId = booking.DestinationAirportId,
-                                    SeatNo = passengerInfo.SeatNo,
-                                    Name = passengerInfo.Name,
-                                    Age = passengerInfo.Age,
-                                    Gender = passengerInfo.Gender,
-                                    DateTime = booking.DateTime,
-                                    Status = booking.Status,
-                                };
-                        await _context.PartnerBookings.AddAsync(connectionTicket);
-                        }
-                    }
 
-                await _context.SaveChangesAsync();
-
-                return Ok("Tickets Booked Successfully");
-        }
-
-        [HttpPut("cancelbooking/{bookingid}")]
+        [HttpPatch("cancelbooking/{bookingid}")]
         public async Task<ActionResult<BookingModel>> CancelBooking([FromRoute] Guid bookingid)
         {
             if (_context.Bookings == null)
@@ -249,39 +273,10 @@ namespace SanoshAirlines.Controllers
         }
 
 
-        [HttpPut("cancelpartnerbooking/{bookingid}")]
-        public async Task<ActionResult<BookingModel>> CancelPartnerBooking([FromRoute] Guid bookingid)
-        {
-            if (_context.Bookings == null)
-            {
-                return Problem("Entity set 'AirlineDbContext.Bookings' is null.");
-            }
-
-            var bookings = await _context.PartnerBookings.Where(pb=> pb.BookingId == bookingid).ToListAsync();
-
-            if (bookings == null)
-            {
-                return BadRequest("BookingID Does Not Exist");
-            }
-
-            foreach (var booking in bookings)
-            {
-                var schedule =await _context.FlightSchedules.FirstOrDefaultAsync(fs=> fs.FlightName == booking.FlightName && fs.SourceAirportId == booking.SourceAirportId && 
-                fs.DestinationAirportId == booking.DestinationAirportId && fs.DateTime == booking.DateTime
-                );
-                                
-                var seat = await _context.Seats.FirstOrDefaultAsync(s => s.ScheduleId == schedule.ScheduleId && s.SeatNumber == booking.SeatNo);
-
-                seat.Status = "Available";
-
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok("Your Booking Has Been Cancelled");
-        }
+      
 
 
-        [HttpPut("canceltickets/{bookingid}")]
+        [HttpPatch("canceltickets/{bookingid}")]
         public async Task<ActionResult<BookingModel>> CancelTicketsInABooking([FromRoute] Guid bookingid, [FromBody] List<string> Names)
         {
             if (_context.Bookings == null)
@@ -321,37 +316,7 @@ namespace SanoshAirlines.Controllers
             return Ok("Your Ticket Has Been Cancelled");
         }
 
-        [HttpPut("cancelticketsinpartnerbooking/{bookingid}")]
-        public async Task<ActionResult<BookingModel>> CancelTicketsInPartnerBooking([FromRoute] Guid bookingid, [FromBody] List<string> Names)
-        {
-            if (_context.Bookings == null)
-            {
-                return Problem("Entity set 'AirlineDbContext.Bookings' is null.");
-            }
-
-            var bookings = await _context.PartnerBookings.Where(pb => pb.BookingId == bookingid && Names.Contains(pb.Name)).ToListAsync();
-
-            if (bookings == null)
-            {
-                return BadRequest("Bookings Does Not Exist");
-            }
-
-            foreach (var booking in bookings)
-            {
-                var schedule = await _context.FlightSchedules.FirstOrDefaultAsync(fs => fs.FlightName == booking.FlightName && fs.SourceAirportId == booking.SourceAirportId &&
-                fs.DestinationAirportId == booking.DestinationAirportId && fs.DateTime == booking.DateTime
-                );
-
-                var seat = await _context.Seats.FirstOrDefaultAsync(s => s.ScheduleId == schedule.ScheduleId && s.SeatNumber == booking.SeatNo);
-
-                seat.Status = "Available";
-
-            }
-
-            await _context.SaveChangesAsync();
-            return Ok("Your Tickets Has Been Cancelled");
-        }
-
+      
 
         private bool BookingExists(Guid id)
         {

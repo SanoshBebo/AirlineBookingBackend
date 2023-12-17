@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SanoshAirlines.Controllers.IntegratedControllers;
 using SanoshAirlines.Models;
 
 namespace SanoshAirlines.Controllers
@@ -40,8 +41,60 @@ namespace SanoshAirlines.Controllers
             {
                 return NotFound();
             }
-            var schedules = await _context.FlightSchedules.Where(s => s.SourceAirportId == source && s.DestinationAirportId == destination && s.DateTime.Date == date.Date).ToListAsync();
-            return Ok(schedules);
+
+            DateTime startDate = date.Date;
+            DateTime endDate = startDate.AddDays(1);
+
+
+            var schedules = await _context.FlightSchedules
+            .Where(schedule =>
+            schedule.SourceAirportId == source &&
+                    schedule.DestinationAirportId == destination &&
+                    schedule.DateTime >= startDate &&
+                    schedule.DateTime < endDate)
+                  .ToListAsync();
+
+
+            if (!schedules.Any())
+            {
+                return NotFound();
+            }
+            List<ScheduleReturnModel> scheduleReturnModels = new List<ScheduleReturnModel>();
+            foreach (var schedule in schedules)
+            {
+                // Get SourceAirportName
+                var sourceAirport = _context.Airports.FirstOrDefault(a => a.AirportId == schedule.SourceAirportId);
+                string sourceAirportName = sourceAirport?.AirportName ?? "Unknown";
+
+                // Get DestinationAirportName
+                var destinationAirport = _context.Airports.FirstOrDefault(a => a.AirportId == schedule.DestinationAirportId);
+                string destinationAirportName = destinationAirport?.AirportName ?? "Unknown";
+
+                var flight = _context.FlightDetails.FirstOrDefault(a => a.FlightName == schedule.FlightName);
+                int flightcapacity = flight.FlightCapacity;
+
+
+                // Fetch seat count for the current schedule
+                int SeatAvailability = _context.Seats.Count(s => s.ScheduleId == schedule.ScheduleId && s.Status == "Available");
+
+
+                ScheduleReturnModel scheduleReturnModel = new ScheduleReturnModel
+                {
+                    ScheduleId = schedule.ScheduleId,
+                    FlightName = schedule.FlightName,
+                    SourceAirportId = schedule.SourceAirportId,
+                    SourceAirportName = sourceAirportName,
+                    DestinationAirportId = schedule.DestinationAirportId,
+                    DestinationAirportName = destinationAirportName,
+                    FlightDuration = schedule.FlightDuration,
+                    DateTime = schedule.DateTime,
+                    Capacity = flightcapacity,
+                    SeatAvailability = SeatAvailability,
+                };
+                scheduleReturnModels.Add(scheduleReturnModel);
+            }
+            return Ok(scheduleReturnModels);
+
         }
 
 
@@ -55,7 +108,46 @@ namespace SanoshAirlines.Controllers
                 return NotFound();
             }
             var schedules = await _context.FlightSchedules.Where(s => s.SourceAirportId == source && s.DestinationAirportId != destination && s.DateTime.Date == date.Date).ToListAsync();
-            return Ok(schedules);
+
+            if (!schedules.Any())
+            {
+                return NotFound();
+            }
+            List<ScheduleReturnModel> scheduleReturnModels = new List<ScheduleReturnModel>();
+            foreach (var schedule in schedules)
+            {
+                // Get SourceAirportName
+                var sourceAirport = _context.Airports.FirstOrDefault(a => a.AirportId == schedule.SourceAirportId);
+                string sourceAirportName = sourceAirport?.AirportName ?? "Unknown";
+
+                // Get DestinationAirportName
+                var destinationAirport = _context.Airports.FirstOrDefault(a => a.AirportId == schedule.DestinationAirportId);
+                string destinationAirportName = destinationAirport?.AirportName ?? "Unknown";
+
+                var flight = _context.FlightDetails.FirstOrDefault(a => a.FlightName == schedule.FlightName);
+                int flightcapacity = flight.FlightCapacity;
+
+
+                // Fetch seat count for the current schedule
+                int SeatAvailability = _context.Seats.Count(s => s.ScheduleId == schedule.ScheduleId && s.Status == "Available");
+
+
+                ScheduleReturnModel scheduleReturnModel = new ScheduleReturnModel
+                {
+                    ScheduleId = schedule.ScheduleId,
+                    FlightName = schedule.FlightName,
+                    SourceAirportId = schedule.SourceAirportId,
+                    SourceAirportName = sourceAirportName,
+                    DestinationAirportId = schedule.DestinationAirportId,
+                    DestinationAirportName = destinationAirportName,
+                    FlightDuration = schedule.FlightDuration,
+                    DateTime = schedule.DateTime,
+                    Capacity = flightcapacity,
+                    SeatAvailability = SeatAvailability,
+                };
+                scheduleReturnModels.Add(scheduleReturnModel);
+            }
+            return Ok(scheduleReturnModels);
         }
 
 

@@ -83,30 +83,20 @@ namespace SanoshAirlines.Controllers
         // POST: api/Airports
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Airport>> PostAirport(Airport airport)
+        public IActionResult PostAirport(List<Airport> airports)
         {
           if (_context.Airports == null)
           {
               return Problem("Entity set 'AirlineDbContext.Airports'  is null.");
           }
+            foreach (var airport in airports)
+            {
             _context.Airports.Add(airport);
-            try
-            {
-                await _context.SaveChangesAsync();
+      
             }
-            catch (DbUpdateException)
-            {
-                if (AirportExists(airport.AirportId))
-                {
-                    return Conflict();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                _context.SaveChanges();
 
-            return CreatedAtAction("GetAirport", new { id = airport.AirportId }, airport);
+            return Ok("Added Succesfully");
         }
 
         // DELETE: api/Airports/5
