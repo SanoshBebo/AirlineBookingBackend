@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -197,6 +198,7 @@ namespace SanoshAirlines.Controllers
         }
 
         // POST: api/FlightSchedules
+        [Authorize]
         [HttpPost("{months}")]
         public IActionResult AddFlightSchedule([FromBody] FlightSchedule schedule, [FromRoute] int months)
         {
@@ -288,8 +290,8 @@ namespace SanoshAirlines.Controllers
         }
 
 
-        // DELETE: api/FlightSchedules
-        [HttpDelete]
+        [Authorize]
+        [HttpPatch]
         public async Task<IActionResult> DeleteFlightSchedules([FromBody] List<int> ids)
         {
             if (_context.FlightSchedules == null || ids == null || ids.Count == 0)

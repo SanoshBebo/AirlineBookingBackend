@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SanoshAirlines.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 
@@ -34,7 +36,8 @@ namespace SanoshAirlines.Controllers
                     {
                         return BadRequest("Email already exists");
                     }
-                    if (_context.Users.FirstOrDefault(u => u.Role == model.Role) != null)
+                    
+                    if (_context.Users.FirstOrDefault(u => u.Role == model.Role) != null && model.Role == "admin")
                     {
                         return BadRequest("Admin Account Cannot Be Created");
                     }
@@ -48,6 +51,28 @@ namespace SanoshAirlines.Controllers
                         Password = model.Password,
                         Role = model.Role
                     };
+
+
+                    string fromMail = "businessreports8@gmail.com";
+                    string fromPassword = "dmvibdlolcdpmavr";
+
+                    MailMessage message = new MailMessage();
+                    message.From = new MailAddress(fromMail);
+                    message.Subject = "Welcome to Red Sparrow!";
+                    message.To.Add(new MailAddress($"{model.Email}"));
+                    message.Body = EmailTemplates.GetWelcomeEmailBody(model.Name);
+                    message.IsBodyHtml = true;
+
+                    var smtpClient = new SmtpClient("smtp.gmail.com")
+                    {
+                        Port = 587,
+                        Credentials = new NetworkCredential(fromMail, fromPassword),
+                        EnableSsl = true,
+                    };
+
+
+                    smtpClient.Send(message);
+
 
                     _context.Users.Add(user);
                     _context.SaveChanges();
@@ -82,8 +107,8 @@ namespace SanoshAirlines.Controllers
                     return BadRequest("Invalid Credentials");
                 }
 
-                var issuer = _configuration["Jwt:Issuer"];
-                var audience = _configuration["Jwt:Audience"];
+                var issuer = _configuration["Jwt:ValidIssuer"];
+                var audience = _configuration["Jwt:ValidAudience"];
                 var key = Encoding.UTF8.GetBytes(_configuration["Jwt:key"]);
                 var signingCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature);

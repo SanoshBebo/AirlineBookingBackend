@@ -68,6 +68,8 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(255);
             entity.Property(e => e.SeatNo).HasMaxLength(255);
             entity.Property(e => e.SourceAirportId).HasMaxLength(255);
+            entity.Property(e => e.Status).HasMaxLength(255);
+
 
             /*entity.HasOne(d => d.Booking).WithMany(p => p.ConnectionFlightTickets).HasForeignKey(d => d.BookingId);
 
@@ -114,10 +116,12 @@ public partial class AirlineDbContext : DbContext
             entity.Property(e => e.Gender).HasMaxLength(255);
             entity.Property(e => e.Name).HasMaxLength(255);
             entity.Property(e => e.SeatNo).HasMaxLength(255);
+            entity.Property(e => e.Status).HasMaxLength(255);
 
-           /* entity.HasOne(d => d.Booking).WithMany(p => p.FlightTickets).HasForeignKey(d => d.BookingId);
 
-            entity.HasOne(d => d.Schedule).WithMany(p => p.FlightTickets).HasForeignKey(d => d.ScheduleId);*/
+            /* entity.HasOne(d => d.Booking).WithMany(p => p.FlightTickets).HasForeignKey(d => d.BookingId);
+
+             entity.HasOne(d => d.Schedule).WithMany(p => p.FlightTickets).HasForeignKey(d => d.ScheduleId);*/
         });
 
         modelBuilder.Entity<PartnerBooking>(entity =>

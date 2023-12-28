@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,7 @@ namespace SanoshAirlines.Controllers
         }
 
         // PUT: api/FlightDetails/5
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutFlightDetail(string id, FlightCapAndStatus flightDetail)
         {
@@ -84,6 +86,8 @@ namespace SanoshAirlines.Controllers
             return NoContent();
         }
 
+
+        [Authorize]
         [HttpPost]
         public IActionResult PostFlightDetails(FlightCapAndStatus details)
         {

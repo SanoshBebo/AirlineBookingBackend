@@ -19,7 +19,10 @@ public partial class FlightTicket
 
     public string Gender { get; set; } = null!;
 
-   /* public virtual Booking Booking { get; set; } = null!;
+    public string Status { get; set; } = null!;
 
-    public virtual FlightSchedule Schedule { get; set; } = null!;*/
+
+    /* public virtual Booking Booking { get; set; } = null!;
+
+     public virtual FlightSchedule Schedule { get; set; } = null!;*/
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Humanizer;
@@ -9,6 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SanoshAirlines.Models;
 using SanoshAirlines.Models.RequestBodyModels;
+using Microsoft.AspNetCore.Authorization;
+using System.Globalization;
 
 namespace SanoshAirlines.Controllers
 {
@@ -24,6 +28,8 @@ namespace SanoshAirlines.Controllers
         }
 
         // GET: api/Bookings
+
+        [Authorize]
         [HttpGet("userbookings/{userid}")]
         public async Task<ActionResult<IEnumerable<Booking>>> GetBookingsOfUser([FromRoute] Guid userid)
         {
@@ -77,19 +83,16 @@ namespace SanoshAirlines.Controllers
 
                 foreach (var ticket in connectingFlightTickets)
                 {
-                      var flightSchedule = await _context.FlightSchedules
-                        .FirstOrDefaultAsync(fs => fs.FlightName == ticket.FlightName && fs.DateTime.Date == ticket.DateTime.Date && fs.SourceAirportId == ticket.SourceAirportId && fs.DestinationAirportId == ticket.DestinationAirportId);
-
+   
                     var sourceAirport = await _context.Airports
-                    .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.SourceAirportId);
+                    .FirstOrDefaultAsync(a => a.AirportId == ticket.SourceAirportId);
 
                     var destinationAirport = await _context.Airports
-                        .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.DestinationAirportId);
+                        .FirstOrDefaultAsync(a => a.AirportId == ticket.DestinationAirportId);
 
                     var bookingTicketData = new
                     {
                         Ticket = ticket,
-                        FlightSchedule = flightSchedule,
                         SourceAirport = sourceAirport,
                         DestinationAirport = destinationAirport
                     };
@@ -113,6 +116,7 @@ namespace SanoshAirlines.Controllers
 
 
         // GET: api/Bookings/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Booking>> GetBooking(Guid id)
         {
@@ -127,11 +131,72 @@ namespace SanoshAirlines.Controllers
                 return NotFound();
             }
 
-            return booking;
+            var bookingData = new List<object>();
+
+            var firstFlightTickets = await _context.FlightTickets
+                    .Where(ft => ft.BookingId == booking.BookingId)
+                    .ToListAsync();
+
+            var connectingFlightTickets = await _context.ConnectionFlightTickets
+                .Where(cft => cft.BookingId == booking.BookingId)
+                .ToListAsync();
+
+            var bookingIdData = new List<object>();
+
+            foreach (var ticket in firstFlightTickets)
+            {
+                var flightSchedule = await _context.FlightSchedules
+                    .FirstOrDefaultAsync(fs => fs.ScheduleId == ticket.ScheduleId);
+
+                var sourceAirport = await _context.Airports
+                .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.SourceAirportId);
+
+                var destinationAirport = await _context.Airports
+                    .FirstOrDefaultAsync(a => a.AirportId == flightSchedule.DestinationAirportId);
+
+
+                var bookingTicketData = new
+                {
+                    Ticket = ticket,
+                    FlightSchedule = flightSchedule,
+                    SourceAirport = sourceAirport,
+                    DestinationAirport = destinationAirport
+                };
+                bookingIdData.Add(bookingTicketData);
+            }
+
+            foreach (var ticket in connectingFlightTickets)
+            {
+
+                var sourceAirport = await _context.Airports
+                .FirstOrDefaultAsync(a => a.AirportId == ticket.SourceAirportId);
+
+                var destinationAirport = await _context.Airports
+                    .FirstOrDefaultAsync(a => a.AirportId == ticket.DestinationAirportId);
+
+                var bookingTicketData = new
+                {
+                    Ticket = ticket,
+                    SourceAirport = sourceAirport,
+                    DestinationAirport = destinationAirport
+                };
+                bookingIdData.Add(bookingTicketData);
+            }
+
+            var bookingDataItem = new
+            {
+                Booking = booking,
+                Tickets = bookingIdData
+            };
+
+            bookingData.Add(bookingDataItem);
+
+            return Ok(bookingData);
         }
 
 
         // GET: api/Bookings/5
+        [Authorize]
         [HttpGet("getConnectionBooking/{id}")]
         public async Task<ActionResult<ConnectionFlightTicket>> GetConnectionBooking(Guid id)
         {
@@ -153,8 +218,90 @@ namespace SanoshAirlines.Controllers
         }
 
 
+        [Authorize]
+        [HttpPost("sendBookingTickets/{email}")]
+        public async Task<ActionResult<ConnectionFlightTicket>> SendBookingTickets([FromRoute] string email, [FromBody] List<ConnectionFlightTicketDto> tickets)
+        {
+
+            string fromMail = "businessreports8@gmail.com";
+            string fromPassword = "dmvibdlolcdpmavr";
+
+            MailMessage message = new MailMessage();
+            message.From = new MailAddress(fromMail);
+            message.Subject = "Booking Details!";
+            message.To.Add(new MailAddress($"{email}"));
+            message.Body = EmailTemplates.GetFlightTickets(email,tickets);
+            message.IsBodyHtml = true;
+
+            var smtpClient = new SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential(fromMail, fromPassword),
+                EnableSsl = true,
+            };
+
+            smtpClient.Send(message);
+
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("cancelBookingTickets/{email}")]
+        public async Task<ActionResult<ConnectionFlightTicket>> CancelBookingTickets([FromRoute] string email, [FromBody] List<ConnectionFlightTicketDto> tickets)
+        {
+
+            string fromMail = "businessreports8@gmail.com";
+            string fromPassword = "dmvibdlolcdpmavr";
+
+            MailMessage message = new MailMessage();
+            message.From = new MailAddress(fromMail);
+            message.Subject = "Ticket Cancellation";
+            message.To.Add(new MailAddress($"{email}"));
+            message.Body = EmailTemplates.CancelFlightTickets(email, tickets);
+            message.IsBodyHtml = true;
+
+            var smtpClient = new SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential(fromMail, fromPassword),
+                EnableSsl = true,
+            };
+
+            smtpClient.Send(message);
+
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("cancelBookingEmail/{email}")]
+        public async Task<ActionResult<ConnectionFlightTicket>> CancelBookingViaEmail([FromRoute] string email, [FromBody] List<ConnectionFlightTicketDto> tickets)
+        {
+
+            string fromMail = "businessreports8@gmail.com";
+            string fromPassword = "dmvibdlolcdpmavr";
+
+            MailMessage message = new MailMessage();
+            message.From = new MailAddress(fromMail);
+            message.Subject = "Booking Cancelled";
+            message.To.Add(new MailAddress($"{email}"));
+            message.Body = EmailTemplates.CancelBooking(email, tickets);
+            message.IsBodyHtml = true;
+
+            var smtpClient = new SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential(fromMail, fromPassword),
+                EnableSsl = true,
+            };
+
+            smtpClient.Send(message);
+
+            return Ok();
+        }
+
 
         // POST: api/Bookings
+       /* [Authorize]*/
         [HttpPost]
         public async Task<ActionResult<BookingModel>> MakeBooking([FromBody] List<BookingModel> bookings)
         {
@@ -195,8 +342,15 @@ namespace SanoshAirlines.Controllers
                                     Age = passengerInfo.Age,
                                     Gender = passengerInfo.Gender,
                                     Name = passengerInfo.Name,
+                                    Status = "Booked",
                                 };
+
+                                var seat = _context.Seats.FirstOrDefault(s => s.SeatNumber == passengerInfo.SeatNo && s.ScheduleId == booking.ScheduleId);
+                             
+                                seat.Status = "Booked";
+                                
                                 await _context.FlightTickets.AddAsync(ticket);
+
                             }
                             else
                             {
@@ -212,6 +366,8 @@ namespace SanoshAirlines.Controllers
                                     SourceAirportId = booking.SourceAirportId,
                                     DestinationAirportId = booking.DestinationAirportId,
                                     DateTime = booking.DateTime,
+                                    Status = "Booked",
+
                                 };
 
 
@@ -232,7 +388,7 @@ namespace SanoshAirlines.Controllers
         }
 
 
-
+        [Authorize]
         [HttpPatch("cancelbooking/{bookingid}")]
         public async Task<ActionResult<BookingModel>> CancelBooking([FromRoute] Guid bookingid)
         {
@@ -257,6 +413,7 @@ namespace SanoshAirlines.Controllers
 
                     foreach (var Ticket in FirstFlightTickets)
                     {
+                    Ticket.Status = "Cancelled";
                         var Seat = _context.Seats.FirstOrDefault(s => s.ScheduleId == Ticket.ScheduleId && s.SeatNumber == Ticket.SeatNo);
                         Seat.Status = "Available";
                     }
@@ -264,8 +421,15 @@ namespace SanoshAirlines.Controllers
                 
                 if (isConnectingFlight != null)
                 {
-                    var ConnectingFlightTickets = await _context.ConnectionFlightTickets.Where(ft => ft.BookingId == booking.BookingId).ToListAsync();
-                    await _context.SaveChangesAsync();
+
+                var ConnectingFlightTickets = await _context.ConnectionFlightTickets.Where(ft => ft.BookingId == booking.BookingId).ToListAsync();
+
+                foreach (var Ticket in ConnectingFlightTickets)
+                {
+                    Ticket.Status = "Cancelled";
+                }
+
+                await _context.SaveChangesAsync();
                     return Ok(new { message = "Your Booking Has been Cancelled", connectingFlightTickets = ConnectingFlightTickets });
                 }
             await _context.SaveChangesAsync();
@@ -273,9 +437,9 @@ namespace SanoshAirlines.Controllers
         }
 
 
-      
 
 
+        [Authorize]
         [HttpPatch("canceltickets/{bookingid}")]
         public async Task<ActionResult<BookingModel>> CancelTicketsInABooking([FromRoute] Guid bookingid, [FromBody] List<string> Names)
         {
@@ -300,6 +464,8 @@ namespace SanoshAirlines.Controllers
 
                 foreach (var Ticket in FirstFlightTickets)
                 {
+                    Ticket.Status = "Cancelled";
+
                     var Seat = _context.Seats.FirstOrDefault(s => s.ScheduleId == Ticket.ScheduleId && s.SeatNumber == Ticket.SeatNo);
                     Seat.Status = "Available";
                 }
@@ -308,6 +474,11 @@ namespace SanoshAirlines.Controllers
             if (isConnectingFlight != null)
             {
                 var ConnectingFlightTickets = await _context.ConnectionFlightTickets.Where(cft => cft.BookingId == booking.BookingId && Names.Contains(cft.Name)).ToListAsync();
+                foreach (var Ticket in ConnectingFlightTickets)
+                {
+                    Ticket.Status = "Cancelled";
+                }
+
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Your Ticket Has been Cancelled", connectingFlightTickets = ConnectingFlightTickets });
             }
@@ -322,5 +493,30 @@ namespace SanoshAirlines.Controllers
         {
             return (_context.Bookings?.Any(e => e.BookingId == id)).GetValueOrDefault();
         }
+    }
+
+    public partial class ConnectionFlightTicketDto
+    {
+       
+        public int TicketNo { get; set; }
+
+        public Guid BookingId { get; set; }
+
+        public string FlightName { get; set; } = null!;
+
+        public string? SourceAirportId { get; set; }
+
+        public string? DestinationAirportId { get; set; }
+
+        public string SeatNo { get; set; } = null!;
+
+        public string Name { get; set; } = null!;
+
+        public int Age { get; set; }
+
+        public string Gender { get; set; } = null!;
+
+        public DateTime DateTime { get; set; }
+
     }
 }
