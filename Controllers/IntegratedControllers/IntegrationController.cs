@@ -195,6 +195,13 @@ namespace SanoshAirlines.Controllers.IntegratedControllers
                         Status = "Booked",
                     };
 
+                    var flightSchedule = _context.FlightSchedules.FirstOrDefault(s => s.FlightName == connectionTicket.FlightName && s.SourceAirportId == connectionTicket.SourceAirportId
+                    && s.DestinationAirportId == connectionTicket.DestinationAirportId && s.DateTime == connectionTicket.DateTime);
+
+                    var seat = _context.Seats.FirstOrDefault(s => s.ScheduleId == flightSchedule.ScheduleId && s.SeatNumber == connectionTicket.SeatNo);
+
+                    seat.Status = "Booked";
+
                     partnerBookings.Add(partnerBooking);
                 }
 
@@ -261,7 +268,7 @@ namespace SanoshAirlines.Controllers.IntegratedControllers
 
             foreach (var booking in bookings)
             {
-                booking.Status = "Canceled";
+                booking.Status = "Cancelled";
 
 
                 var schedule = await _context.FlightSchedules.FirstOrDefaultAsync(fs => fs.FlightName == booking.FlightName && fs.SourceAirportId == booking.SourceAirportId &&
@@ -343,11 +350,7 @@ namespace SanoshAirlines.Controllers.IntegratedControllers
                 var seat = _context.Seats.FirstOrDefault(s => s.SeatNumber == seatno && s.ScheduleId == scheduleId);
                 if (seat != null)
                 {
-                    if (seat.Status == status)
-                    {
-                        return BadRequest($"Seat Is Already {status}");
-                    }
-
+            
                     if (status.ToLower() == "booked")
                     {
                         // Add seats with "Booked" status to memory cache

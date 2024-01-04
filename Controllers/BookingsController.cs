@@ -42,7 +42,7 @@ namespace SanoshAirlines.Controllers
 
             if (bookings == null || !bookings.Any())
             {
-                return BadRequest("No Bookings");
+                return Ok("No Bookings");
             }
 
             var bookingData = new List<object>();
@@ -404,7 +404,7 @@ namespace SanoshAirlines.Controllers
                 return BadRequest("BookingID Does Not Exist");
             }
 
-                booking.Status = "Canceled";
+                booking.Status = "Cancelled";
                 var isDirectFlight = _context.FlightTickets.FirstOrDefault(ft => ft.BookingId == booking.BookingId);
                 var isConnectingFlight = _context.ConnectionFlightTickets.FirstOrDefault(cft => cft.BookingId == booking.BookingId);
                 if (isDirectFlight != null)
@@ -449,6 +449,7 @@ namespace SanoshAirlines.Controllers
             }
 
             var booking = await _context.Bookings.FindAsync(bookingid);
+            bool allTicketsCancelled = false; // Initialize the flag
 
             if (booking == null)
             {
@@ -465,10 +466,15 @@ namespace SanoshAirlines.Controllers
                 foreach (var Ticket in FirstFlightTickets)
                 {
                     Ticket.Status = "Cancelled";
-
                     var Seat = _context.Seats.FirstOrDefault(s => s.ScheduleId == Ticket.ScheduleId && s.SeatNumber == Ticket.SeatNo);
                     Seat.Status = "Available";
                 }
+
+                allTicketsCancelled = await _context.FlightTickets
+                .Where(ft => ft.BookingId == booking.BookingId)
+                .AllAsync(ft => ft.Status == "Cancelled");
+
+
             }
 
             if (isConnectingFlight != null)
@@ -480,10 +486,30 @@ namespace SanoshAirlines.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                    bool allConnectingTicketsCancelled = await _context.ConnectionFlightTickets
+                .Where(cft => cft.BookingId == booking.BookingId)
+                .AllAsync(cft => cft.Status == "Cancelled");
+
+                allTicketsCancelled = allConnectingTicketsCancelled && allTicketsCancelled;
+
+                if (allTicketsCancelled)
+                {
+                    booking.Status = "Cancelled";
+                }
+
+                await _context.SaveChangesAsync();
+
                 return Ok(new { message = "Your Ticket Has been Cancelled", connectingFlightTickets = ConnectingFlightTickets });
             }
 
+            if (allTicketsCancelled)
+            {
+                booking.Status = "Cancelled";
+            }
+
             await _context.SaveChangesAsync();
+
             return Ok("Your Ticket Has Been Cancelled");
         }
 

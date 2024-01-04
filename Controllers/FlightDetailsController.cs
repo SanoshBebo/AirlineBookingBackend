@@ -23,6 +23,7 @@ namespace SanoshAirlines.Controllers
         }
 
         // GET: api/FlightDetails
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FlightDetail>>> GetFlightDetails()
         {
@@ -36,6 +37,7 @@ namespace SanoshAirlines.Controllers
         }
 
         // GET: api/FlightDetails/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<FlightDetail>> GetFlightDetail(string id)
         {

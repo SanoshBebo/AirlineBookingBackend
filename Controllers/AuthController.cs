@@ -119,7 +119,7 @@ namespace SanoshAirlines.Controllers
                      new Claim(JwtRegisteredClaimNames.Email,model.Email),
                 });
 
-                var expires = DateTime.UtcNow.AddMinutes(10);
+                var expires = DateTime.UtcNow.AddMinutes(30);
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {

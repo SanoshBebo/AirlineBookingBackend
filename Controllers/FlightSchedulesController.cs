@@ -224,6 +224,14 @@ namespace SanoshAirlines.Controllers
                f.FlightName == schedule.FlightName &&
                f.DateTime == schedule.DateTime);
 
+            var flightFound = _context.FlightDetails.FirstOrDefault(f =>
+               f.FlightName == schedule.FlightName);
+
+            if(flightFound != null && flightFound.IsActive == false)
+            {
+                return BadRequest("Selected flight is currently inactive");
+            }
+
             if (existingFlight != null)
             {
                 return BadRequest("Flight already scheduled at this datetime.");
